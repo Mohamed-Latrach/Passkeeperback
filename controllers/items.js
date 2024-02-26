@@ -1,3 +1,4 @@
+const fs = require('fs').promises
 const Item = require('../models/Item')
 const cloudinary = require('../utilities/cloudinary-config')
 const { itemValidator } = require('../utilities/validators')
@@ -25,6 +26,7 @@ const getOneItem = async (req, res) => {
 }
 
 const createItem = async (req, res) => {
+    const filePath = req.file.path
     try {
 
         // The multer middleware creates for us a temporary file inside the specified folder 'uploads-tmp'
@@ -33,7 +35,7 @@ const createItem = async (req, res) => {
         }
 
         // Upload the file from the folder 'uploads-tmp' to cloudinary
-        const upload = await cloudinary.uploader.upload(req.file.path)
+        const upload = await cloudinary.uploader.upload(filePath)
 
         const validationResult = itemValidator.validate(req.body, { abortEarly: false })
         if (validationResult.error) {
@@ -57,6 +59,8 @@ const createItem = async (req, res) => {
         }    
     } catch (error) {
         res.status(500).json({ error: error.message })
+    } finally { // Code block to be executed regardless of the try result
+        fs.unlink(filePath) // Delete the temporary file after uploading to cloudinary
     }
 }
 
