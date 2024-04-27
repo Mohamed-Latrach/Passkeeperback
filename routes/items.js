@@ -9,7 +9,7 @@ const router = express.Router();
 router.get('/', getAllItems);
 router.get('/:id', getOneItem);
 router.post('/', checkAuth, multer, createItem);
-router.put('/:id', checkAuth, updateItem);
+router.put('/:id', checkAuth, multer, updateItem);
 router.delete('/:id', checkAuth, deleteItem);
 
 module.exports = router;

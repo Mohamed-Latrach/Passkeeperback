@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 
 const itemsRouter = require('./routes/items');
+const passwordsRouter = require('./routes/passwords');
 const usersRouter = require('./routes/users');
 
 require('dotenv').config();
@@ -17,6 +18,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/items', itemsRouter);
+app.use('/passwords', passwordsRouter);
 app.use('/auth', usersRouter);
 
 const PORT = process.env.PORT || 5000;

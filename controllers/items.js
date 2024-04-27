@@ -33,13 +33,13 @@ const createItem = async (req, res) => {
             return res.status(400).json({ error: "A photo file is required" })
         }
 
-        // Upload the file from the folder 'uploads-tmp' to cloudinary
-        const upload = await cloudinary.uploader.upload(req.file.path)
-
         const validationResult = itemValidator.validate(req.body, { abortEarly: false })
         if (validationResult.error) {
             res.status(400).json(validationResult)
         } else {
+            // Upload the file from the folder 'uploads-tmp' to cloudinary
+            const upload = await cloudinary.uploader.upload(req.file.path)
+
             const item = new Item({
                 title: req.body.title,
                 description: req.body.description,
@@ -72,6 +72,21 @@ const updateItem = async (req, res) => {
         if (validationResult.error) {
             res.status(400).json(validationResult)
         } else {
+
+            if (req.file) {
+                // Upload the file from the folder 'uploads-tmp' to cloudinary
+                const upload = await cloudinary.uploader.upload(req.file.path)
+                req.body.photo = upload.secure_url
+
+                const item = await Item.findById(itemToUpdateId)
+                
+                // Extract public ID from secure URL
+                // Assuming the URL is in format: https://res.cloudinary.com/<cloud_name>/image/upload/<public_id>.<format>
+                const photoPublicId = item.photo.split('/').pop().split('.')[0];
+
+               await cloudinary.uploader.destroy(photoPublicId);
+            }
+
             const item = await Item.findOneAndUpdate({ _id: itemToUpdateId, user: req.user._id }, { $set: req.body }, { new: true, populate: "user" })
             if (!item) {
                 res.status(404).json({error: "Item not found"})
@@ -90,8 +105,12 @@ const updateItem = async (req, res) => {
 const deleteItem = async (req, res) => {
     try {
         const itemToDeleteId = req.params.id
-        const result = await Item.deleteOne({ _id: itemToDeleteId, user: req.user._id })
-        if (result.deletedCount === 1) {
+        const deletedItem = await Item.findOneAndDelete({ _id: itemToDeleteId, user: req.user._id })
+        if (deletedItem) {
+                // Extract public ID from secure URL
+                const photoPublicId = deletedItem.photo.split('/').pop().split('.')[0];
+                await cloudinary.uploader.destroy(photoPublicId);
+
             res.json({
                 message: "Item deleted successfully",
                 item: {
